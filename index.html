@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Movesense — Live Readout</title>
+<style>
+  :root {
+    --bg: #14181c;
+    --panel: #1c2128;
+    --line: #2a3038;
+    --text: #e6e9ec;
+    --dim: #7d8792;
+    --live: #5fd68a;
+    --idle: #d68a5f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Söhne", "Inter", system-ui, sans-serif;
+    padding: 48px 32px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle { color: var(--dim); font-size: 14px; margin-bottom: 40px; }
+
+  section { margin-bottom: 40px; }
+  section h2.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--dim);
+    margin: 0 0 16px;
+  }
+
+  .connect-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .connect-slot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  button {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--dim); }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  .status-text { font-size: 13px; color: var(--dim); }
+
+  .warning {
+    font-size: 13px;
+    color: var(--idle);
+    margin-top: 12px;
+  }
+
+  label.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--dim);
+    margin-top: 16px;
+    cursor: pointer;
+  }
+
+  .sensor-panel {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sensor-panel:last-child { border-bottom: none; }
+  .sensor-panel h2 {
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: capitalize;
+    margin: 0 0 16px;
+    color: var(--dim);
+    letter-spacing: 0.02em;
+  }
+
+  .readout {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .cell { background: var(--panel); padding: 20px; }
+  .cell .label { font-size: 12px; color: var(--dim); margin-bottom: 8px; }
+  .cell .value {
+    font-family: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  canvas {
+    width: 100%;
+    height: 140px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: block;
+  }
+
+  #panels:empty::after {
+    content: "Connect a sensor (or enable simulate mode) to see live data.";
+    color: var(--dim);
+    font-size: 14px;
+  }
+
+  .recording-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  input[type="text"] {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    min-width: 260px;
+  }
+  input[type="text"]:disabled { opacity: 0.6; }
+
+  #recordingStatus {
+    font-size: 13px;
+    color: var(--live);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  th { color: var(--dim); font-weight: 600; font-size: 12px; }
+  td button {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .hint {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+  .hint code {
+    background: var(--panel);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Sensor readout</h1>
+    <div class="subtitle">Connects directly to your Movesense sensors over Web Bluetooth — no bridge, no background process.</div>
+
+    <section>
+      <h2 class="section-title">Sensors</h2>
+      <div class="connect-row">
+        <div class="connect-slot">
+          <button id="connect-left">Connect Left Sensor</button>
+          <span class="status-text" id="status-left">idle</span>
+        </div>
+        <div class="connect-slot">
+          <button id="connect-right">Connect Right Sensor</button>
+          <span class="status-text" id="status-right">idle</span>
+        </div>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="simulateToggle" />
+        Use simulated sensors (no hardware)
+      </label>
+      <div class="warning" id="bleWarning" hidden>
+        Web Bluetooth isn't available in this browser — falling back to simulated sensors.
+        Try Chrome or Edge for real hardware.
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Live view</h2>
+      <div id="panels"></div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Recording</h2>
+      <div class="recording-controls">
+        <input type="text" id="sessionLabel" />
+        <button id="startRecording">Start Recording</button>
+        <button id="stopRecording" hidden>Stop Recording</button>
+        <span id="recordingStatus" hidden><span id="recordingCount">0</span> samples captured</span>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Session history</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Started</th>
+            <th>Duration</th>
+            <th>Sensors</th>
+            <th>Samples</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sessionRows"></tbody>
+      </table>
+    </section>
+
+    <div class="hint">
+      Recorded sessions are stored locally in this browser (IndexedDB) — nothing leaves your machine.
+      Use <code>Export CSV</code> on a session to pull its data out for analysis elsewhere.
+    </div>
+  </div>
+
+  <script src="JS/storage.js"></script>
+  <script src="JS/ble.js"></script>
+  <script src="JS/simulate.js"></script>
+  <script src="JS/app.js"></script>
+</body>
+</html>
