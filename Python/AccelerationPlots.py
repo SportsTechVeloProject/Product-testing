@@ -6,7 +6,7 @@ import os
 print("Hello World")
 
 # Read the original CSV file
-file_path = os.path.join(os.path.dirname(__file__), "squats.csv")
+file_path = 'Python/Recording1_IMU.csv'
 
 data = pd.read_csv(file_path)
 
@@ -97,10 +97,10 @@ for ax_row in axes:
         ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig("overheadPress.png", dpi=150)
+#print("Plot saved to 'squats_acceleration_plot.png'")
+#plt.savefig("overheadPress.png", dpi=150)
 plt.show()
 
-print("Plot saved to 'squats_acceleration_plot.png'")
 
 
 # ================================

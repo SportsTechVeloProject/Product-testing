@@ -8,11 +8,11 @@ from matplotlib.animation import FuncAnimation
 import pandas as pd
 
 # Load the adjusteds IMU data
-resampled_df = pd.read_csv('adjusted_resampled_imu_data_30Hz.csv')
+resampled_df = pd.read_csv('Python/adjusted_resampled_imu_data_30Hz.csv')
 imu_times = resampled_df['t'].values
 imu_y = resampled_df['y'].values
 
-video_path = 'video1.mp4'  # Made for attempt 1
+video_path = 'DataSets/DataSet_100926/video1.mp4'  # Made for attempt 1
 cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
 

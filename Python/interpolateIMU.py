@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 
 # Load the original IMU data
-data = pd.read_csv('right_data.csv')
+data = pd.read_csv('Python/right_data.csv')
 
 # Extract time and IMU data
 t = data['t'].values
@@ -28,4 +28,4 @@ resampled_df = pd.DataFrame(resampled_data, columns=['x', 'y', 'z', 'gx', 'gy', 
 resampled_df['t'] = target_times
 
 # Save the adjusted and resampled data to a new CSV file
-resampled_df.to_csv('adjusted_resampled_imu_data_30Hz.csv', index=False)
+resampled_df.to_csv('Python/adjusted_resampled_imu_data_30Hz.csv', index=False)
