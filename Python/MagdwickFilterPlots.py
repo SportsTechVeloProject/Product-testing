@@ -36,14 +36,14 @@ x_left = left_data["x"].to_numpy()
 y_left = left_data["y"].to_numpy()
 z_left = left_data["z"].to_numpy()
 
-t_left = left_data["recvAt"].to_numpy()
+t_left = left_data["t"].to_numpy()
 
 
 x_right = right_data["x"].to_numpy()
 y_right = right_data["y"].to_numpy()
 z_right = right_data["z"].to_numpy()
 
-t_right = right_data["recvAt"].to_numpy()
+t_right = right_data["t"].to_numpy()
 
 
 # ============================================================
@@ -75,8 +75,8 @@ magnitude_right_raw = np.sqrt(
 # Time
 # ============================================================
 
-t_left_sec = (t_left - t_left[0]) / 1000.0
-t_right_sec = (t_right - t_right[0]) / 1000.0
+t_left_sec = (t_left - t_left[0])
+t_right_sec = (t_right - t_right[0])
 
 #============================================================
 #Data to be used in the fusion filter
@@ -347,4 +347,9 @@ plt.grid(True)
 plt.tight_layout()
 
 plt.show()
+# ============================================================
+# Save filtered acceleration magnitude
+# ============================================================
 
+#save_right_data = pd.DataFrame({"t": t_right_sec, "acc": magnitude_right_filtered})
+#save_right_data.to_csv("Python/madgwick_right_data.csv", index=False)
