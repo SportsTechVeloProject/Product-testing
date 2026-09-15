@@ -11,7 +11,7 @@ import imufusion
 
 file_path = os.path.join(
     os.path.dirname(__file__),
-    "Recording1_IMU.csv"
+    "Test2_Rotating.csv"
 )
 
 data = pd.read_csv(file_path)
@@ -36,14 +36,14 @@ x_left = left_data["x"].to_numpy()
 y_left = left_data["y"].to_numpy()
 z_left = left_data["z"].to_numpy()
 
-t_left = left_data["t"].to_numpy()
+t_left = left_data["recvAt"].to_numpy()
 
 
 x_right = right_data["x"].to_numpy()
 y_right = right_data["y"].to_numpy()
 z_right = right_data["z"].to_numpy()
 
-t_right = right_data["t"].to_numpy()
+t_right = right_data["recvAt"].to_numpy()
 
 
 # ============================================================
@@ -75,8 +75,8 @@ magnitude_right_raw = np.sqrt(
 # Time
 # ============================================================
 
-t_left_sec = (t_left - t_left[0])
-t_right_sec = (t_right - t_right[0])
+t_left_sec = (t_left - t_left[0]) / 1000.0
+t_right_sec = (t_right - t_right[0]) / 1000.0
 
 #============================================================
 #Data to be used in the fusion filter
@@ -230,126 +230,138 @@ magnitude_right_filtered = np.sqrt(
     earth_acceleration_right[:, 2]**2
 )
 
+# ============================================================
+# INVERT ALL GRAPHS
+# ============================================================
+
+# Magnitude
+magnitude_left_raw = -magnitude_left_raw
+magnitude_right_raw = -magnitude_right_raw
+
+magnitude_left_filtered = -magnitude_left_filtered
+magnitude_right_filtered = -magnitude_right_filtered
+
+# Individual axes - raw
+x_left = -x_left
+y_left = -y_left
+z_left = -z_left
+
+x_right = -x_right
+y_right = -y_right
+z_right = -z_right
+
+# Individual axes - filtered
+earth_acceleration_left = -earth_acceleration_left
+earth_acceleration_right = -earth_acceleration_right
+
 
 # ============================================================
-# PLOT LEFT SENSOR
+# WINDOW 1: Magnitude - LEFT and RIGHT, each raw + filtered
 # ============================================================
 
-plt.figure(figsize=(14, 7))
+fig1, (ax_mag_left, ax_mag_right) = plt.subplots(
+    2, 1, figsize=(14, 10), sharex=True
+)
 
-plt.plot(
+ax_mag_left.plot(
     t_left_sec,
     magnitude_left_raw,
     label="Unfiltered",
     alpha=0.6
 )
-
-plt.plot(
+ax_mag_left.plot(
     t_left_sec,
     magnitude_left_filtered,
     label="Fusion filtered",
     linewidth=2
 )
+ax_mag_left.set_ylabel("Acceleration [m/s²]")
+ax_mag_left.set_title("LEFT Sensor - Magnitude (Unfiltered vs Fusion Filtered)")
+ax_mag_left.legend()
+ax_mag_left.grid(True)
 
-plt.xlabel("Time [s]")
-plt.ylabel("Acceleration [m/s²]")
-plt.title("LEFT Sensor - Unfiltered vs Fusion Filtered")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-
-plt.show()
-
-
-# ============================================================
-# PLOT RIGHT SENSOR
-# ============================================================
-
-plt.figure(figsize=(14, 7))
-
-plt.plot(
+ax_mag_right.plot(
     t_right_sec,
     magnitude_right_raw,
     label="Unfiltered",
     alpha=0.6
 )
-
-plt.plot(
+ax_mag_right.plot(
     t_right_sec,
     magnitude_right_filtered,
     label="Fusion filtered",
     linewidth=2
 )
+ax_mag_right.set_xlabel("Time [s]")
+ax_mag_right.set_ylabel("Acceleration [m/s²]")
+ax_mag_right.set_title("RIGHT Sensor - Magnitude (Unfiltered vs Fusion Filtered)")
+ax_mag_right.legend()
+ax_mag_right.grid(True)
 
-plt.xlabel("Time [s]")
-plt.ylabel("Acceleration [m/s²]")
-plt.title("RIGHT Sensor - Unfiltered vs Fusion Filtered")
-plt.legend()
-plt.grid(True)
 plt.tight_layout()
-
 plt.show()
 
 
 # ============================================================
-# Plot individual axes - RIGHT sensor
+# WINDOW 2: Individual axes - LEFT X/Y/Z and RIGHT X/Y/Z,
+# each raw + filtered, one subplot per axis per sensor
 # ============================================================
 
-plt.figure(figsize=(14, 7))
-
-plt.plot(
-    t_right_sec,
-    x_right,
-    label="Raw X",
-    alpha=0.5
+fig2, axes2 = plt.subplots(
+    6, 1, figsize=(14, 18), sharex=False
 )
 
-plt.plot(
-    t_right_sec,
-    earth_acceleration_right[:, 0],
-    label="Filtered X",
-    linewidth=2
-)
+(ax_lx, ax_ly, ax_lz, ax_rx, ax_ry, ax_rz) = axes2
 
-plt.plot(
-    t_right_sec,
-    y_right,
-    label="Raw Y",
-    alpha=0.5
-)
+# LEFT X
+ax_lx.plot(t_left_sec, x_left, label="Raw X", alpha=0.5)
+ax_lx.plot(t_left_sec, earth_acceleration_left[:, 0], label="Filtered X", linewidth=2)
+ax_lx.set_ylabel("Accel [m/s²]")
+ax_lx.set_title("LEFT Sensor - X axis")
+ax_lx.legend()
+ax_lx.grid(True)
 
-plt.plot(
-    t_right_sec,
-    earth_acceleration_right[:, 1],
-    label="Filtered Y",
-    linewidth=2
-)
+# LEFT Y
+ax_ly.plot(t_left_sec, y_left, label="Raw Y", alpha=0.5)
+ax_ly.plot(t_left_sec, earth_acceleration_left[:, 1], label="Filtered Y", linewidth=2)
+ax_ly.set_ylabel("Accel [m/s²]")
+ax_ly.set_title("LEFT Sensor - Y axis")
+ax_ly.legend()
+ax_ly.grid(True)
 
-plt.plot(
-    t_right_sec,
-    z_right,
-    label="Raw Z",
-    alpha=0.5
-)
+# LEFT Z
+ax_lz.plot(t_left_sec, z_left, label="Raw Z", alpha=0.5)
+ax_lz.plot(t_left_sec, earth_acceleration_left[:, 2], label="Filtered Z", linewidth=2)
+ax_lz.set_xlabel("Time [s]")
+ax_lz.set_ylabel("Accel [m/s²]")
+ax_lz.set_title("LEFT Sensor - Z axis")
+ax_lz.legend()
+ax_lz.grid(True)
 
-plt.plot(
-    t_right_sec,
-    earth_acceleration_right[:, 2],
-    label="Filtered Z",
-    linewidth=2
-)
+# RIGHT X
+ax_rx.plot(t_right_sec, x_right, label="Raw X", alpha=0.5)
+ax_rx.plot(t_right_sec, earth_acceleration_right[:, 0], label="Filtered X", linewidth=2)
+ax_rx.set_ylabel("Accel [m/s²]")
+ax_rx.set_title("RIGHT Sensor - X axis")
+ax_rx.legend()
+ax_rx.grid(True)
 
-plt.xlabel("Time [s]")
-plt.ylabel("Acceleration [m/s²]")
-plt.title("RIGHT Sensor - Individual Axes")
-plt.legend()
-plt.grid(True)
+# RIGHT Y
+ax_ry.plot(t_right_sec, y_right, label="Raw Y", alpha=0.5)
+ax_ry.plot(t_right_sec, earth_acceleration_right[:, 1], label="Filtered Y", linewidth=2)
+ax_ry.set_ylabel("Accel [m/s²]")
+ax_ry.set_title("RIGHT Sensor - Y axis")
+ax_ry.legend()
+ax_ry.grid(True)
+
+# RIGHT Z
+ax_rz.plot(t_right_sec, z_right, label="Raw Z", alpha=0.5)
+ax_rz.plot(t_right_sec, earth_acceleration_right[:, 2], label="Filtered Z", linewidth=2)
+ax_rz.set_xlabel("Time [s]")
+ax_rz.set_ylabel("Accel [m/s²]")
+ax_rz.set_title("RIGHT Sensor - Z axis")
+ax_rz.legend()
+ax_rz.grid(True)
+
 plt.tight_layout()
-
 plt.show()
-# ============================================================
-# Save filtered acceleration magnitude
-# ============================================================
-
-#save_right_data = pd.DataFrame({"t": t_right_sec, "acc": magnitude_right_filtered})
-#save_right_data.to_csv("Python/madgwick_right_data.csv", index=False)
