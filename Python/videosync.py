@@ -7,19 +7,21 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import pandas as pd
 
-# Parameters: Note that the imu data and video should have the same framerate
-imudata_raw = pd.read_csv('Python/adjusted_resampled_imu_data_30Hz.csv')
-magdwick = pd.read_csv('Python/madgwick_right_data_30Hz.csv')
+# Parameters: -----------
+imudata_raw = pd.read_csv('Python/time_adjusted_imu_100926_1.csv')
+magdwick = pd.read_csv('Python/madgwick_right_data.csv')
 video_path = 'DataSets/DataSet_100926/video1.mp4'  # Made for attempt 1
 
-
+IMU_DATA_FREQ = 100
 FIRST_SQUAT_IMU_TIME = 5.9
 FIRST_SQUAT_VIDEO_TIME = 5.4
 VIDEO_IMU_DIFF = FIRST_SQUAT_IMU_TIME - FIRST_SQUAT_VIDEO_TIME
+# -----------
 
-# Load the adjusted IMU data
+
+# Load the IMU data
 imu_times = imudata_raw['t'].values
-imu_y = imudata_raw['y'].values
+imu_y = imudata_raw['acc'].values
 
 magdwick_times = magdwick['t'].values
 magdwick_acc = magdwick['acc'].values
@@ -33,7 +35,7 @@ for i in range(len(magdwick_acc)):
 # Video setup
 cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
-
+print("Fps: ", fps)
 
 # Initialize the plot could be extended to more axis?
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8))
@@ -60,9 +62,10 @@ img = ax1.imshow(np.zeros((480, 640, 3), dtype=np.uint8))
 
 video_started = False
 current_frame = 0
+imudata_index = 0
 # Function to update the plot and video frame
 def update(frame_idx):
-    global video_started, current_frame
+    global video_started, current_frame, imudata_index
     current_time = frame_idx / fps
 
     #Pause the video until syncronized.
@@ -80,13 +83,29 @@ def update(frame_idx):
             current_frame +=1
 
     # Update the IMU plot
-    line1.set_data(imu_times[:frame_idx+1], imu_y[:frame_idx+1])
-    line2.set_data(magdwick_times[:frame_idx+1], magdwick_acc[:frame_idx+1])
+    while (imu_times[imudata_index] <= current_time):
+        line1.set_data(imu_times[:imudata_index+1], imu_y[:imudata_index+1])
+        line2.set_data(magdwick_times[:imudata_index+1], magdwick_acc[:imudata_index+1])
+        imudata_index += 1
     return img, line1, line2
 
 # Create the animation
 ani = FuncAnimation(fig, update, frames=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
                     interval=1000/fps, blit=False)
+
+is_paused = False
+
+def toggle_pause(event):
+    global is_paused
+    if event.key == ' ':
+        if is_paused:
+            ani.event_source.start()
+        else:
+            ani.event_source.stop()
+        is_paused = not is_paused
+
+# Connect the key press event
+fig.canvas.mpl_connect('key_press_event', toggle_pause)
 
 plt.tight_layout()
 plt.show()
