@@ -6,7 +6,6 @@ from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 from scipy.integrate import cumulative_trapezoid
 
-
 # ============================================================
 # FILTER FALSE PEAKS
 # ============================================================
@@ -109,7 +108,7 @@ def validate_peaks(signal, peaks, sample_rate):
 
 file_path = os.path.join(
     os.path.dirname(__file__),
-    "Test1_Rotating.csv"
+    "Test2_Rotating.csv"
 )
 
 data = pd.read_csv(file_path)
@@ -409,14 +408,13 @@ print("Peaks after filtering:", len(valid_peaks_right))
 # Calculate acceleration and velocity for EVERY repetition
 # ============================================================
 
-WINDOW_SIZE = 5
 
 all_repetition_acceleration = []
 all_repetition_time = []
 all_repetition_velocity = []
 
 
-WINDOW_SIZE = 5
+WINDOW_SIZE = 7
 
 all_repetition_acceleration = []
 all_repetition_time = []
@@ -427,7 +425,6 @@ peak_velocities = []
 
 
 # Need at least two peaks to define one repetition
-
 
 if len(valid_peaks_right) < 2:
 
@@ -450,218 +447,75 @@ else:
             # Start from the beginning of the measurement
             start = 0
             stop = valid_peaks_right[0]
-        #if rep_number == 9: 
-           # start = valid_peaks_right[8]
-           # stop = valid_peaks_right[9]
-
         else:
-
             # Following repetitions:
-            # Start at previous detected peak
+            # Start at previous detected peak, stop at current peak
             start = valid_peaks_right[rep_number - 1]
-
-            # Stop at current detected peak
             stop = valid_peaks_right[rep_number]
 
-            # ----------------------------------------------------
-            # Extract acceleration and time
-            # ----------------------------------------------------
+        # ----------------------------------------------------
+        # Extract acceleration and time
+        # ----------------------------------------------------
 
-            repetition = (
-                magnitude_right_filtered[start:stop]
-            )
-
-            repetition_time = (
-                t_right_sec[start:stop]
-            )
-
+        repetition = magnitude_right_filtered[start:stop]
+        repetition_time = t_right_sec[start:stop]
 
         # ----------------------------------------------------
         # Reverse the data
-        #
-        # This keeps your original approach where the
-        # acceleration is examined backwards from the peak.
-            # ----------------------------------------------------
+        # ----------------------------------------------------
 
-            repetition = np.flip(
-                repetition
-            )
+        repetition = np.flip(repetition)
+        repetition_time = np.flip(repetition_time)
 
-            repetition_time = np.flip(
-                repetition_time
-            )
+        # ----------------------------------------------------
+        # Find acceleration section
+        # ----------------------------------------------------
 
+        acceleration = []
+        time_stamps = []
 
-            # ----------------------------------------------------
-            # Find acceleration section
-            # ----------------------------------------------------
+        for j in range(WINDOW_SIZE, len(repetition) - WINDOW_SIZE):
 
-            acceleration = []
-            time_stamps = []
+            previous_average = np.mean(repetition[j - WINDOW_SIZE:j])
+            next_average = np.mean(repetition[j:j + WINDOW_SIZE])
 
+            if next_average < previous_average:
+                acceleration.append(repetition[j])
+                time_stamps.append(repetition_time[j])
+            else:
+                break
 
-            for j in range(
-                WINDOW_SIZE,
-                len(repetition) - WINDOW_SIZE
-            ):
+        acceleration = np.array(acceleration)
+        time_stamps = np.array(time_stamps)
 
-                # Average of previous 5 values
+        if len(acceleration) < 2:
+            print(f"\nRepetition {rep_number}: Not enough acceleration data.")
+            continue
 
-                previous_average = np.mean(
-                    repetition[
-                        j - WINDOW_SIZE:j
-                    ]
-                )
+        # ----------------------------------------------------
+        # Calculate velocity
+        # ----------------------------------------------------
 
+        velocity = cumulative_trapezoid(acceleration, time_stamps, initial=0)
+        average_velocity = np.mean(np.abs(velocity))
+        peak_velocity = np.max(np.abs(velocity))
 
-                # Average of next 5 values
+        all_repetition_acceleration.append(acceleration)
+        all_repetition_time.append(time_stamps)
+        all_repetition_velocity.append(velocity)
+        average_velocities.append(average_velocity)
+        peak_velocities.append(peak_velocity)
 
-                next_average = np.mean(
-                    repetition[
-                        j:j + WINDOW_SIZE
-                    ]
-                )
+        # ----------------------------------------------------
+        # Print results
+        # ----------------------------------------------------
 
-
-                # ------------------------------------------------
-                # Acceleration is still moving in the same
-                # direction
-                # ------------------------------------------------
-
-                if next_average < previous_average:
-
-                    acceleration.append(
-                        repetition[j]
-                    )
-
-                    time_stamps.append(
-                        repetition_time[j]
-                    )
-
-
-                # ------------------------------------------------
-                # Direction has changed
-                # ------------------------------------------------
-
-                else:
-
-                    break
-
-
-            # ----------------------------------------------------
-            # Convert to NumPy arrays
-            # ----------------------------------------------------
-
-            acceleration = np.array(
-                acceleration
-            )
-
-            time_stamps = np.array(
-                time_stamps
-            )
-
-
-            # ----------------------------------------------------
-            # Check that enough data exists
-            # ----------------------------------------------------
-
-            if len(acceleration) < 2:
-
-                print(
-                    f"\nRepetition {rep_number + 1}: "
-                    "Not enough acceleration data."
-                )
-
-                continue
-
-
-            # ----------------------------------------------------
-            # Calculate velocity
-            # ----------------------------------------------------
-
-            velocity = cumulative_trapezoid(
-                acceleration,
-                time_stamps,
-                initial=0
-            )
-
-
-            # ----------------------------------------------------
-            # Calculate average velocity
-            # ----------------------------------------------------
-
-            average_velocity = np.mean(
-                np.abs(velocity)
-            )
-
-
-            # ----------------------------------------------------
-            # Calculate peak velocity
-            # ----------------------------------------------------
-
-            peak_velocity = np.max(
-                np.abs(velocity)
-            )
-
-
-            # ----------------------------------------------------
-            # Store results
-            # ----------------------------------------------------
-
-            all_repetition_acceleration.append(
-                acceleration
-            )
-
-            all_repetition_time.append(
-                time_stamps
-            )
-
-            all_repetition_velocity.append(
-                velocity
-            )
-
-            average_velocities.append(
-                average_velocity
-            )
-
-            peak_velocities.append(
-                peak_velocity
-            )
-
-
-            # ----------------------------------------------------
-            # Print results
-            # ----------------------------------------------------
-
-            print(
-                f"\nRepetition {rep_number + 1}"
-            )
-
-            print(
-                f"Peak start: "
-                f"{t_right_sec[start]:.3f} s"
-            )
-
-            print(
-                f"Peak end: "
-                f"{t_right_sec[stop]:.3f} s"
-            )
-
-            print(
-                f"Acceleration samples: "
-                f"{len(acceleration)}"
-            )
-
-            print(
-                f"Average velocity: "
-                f"{average_velocity:.3f} m/s"
-            )
-
-            print(
-                f"Peak velocity: "
-                f"{peak_velocity:.3f} m/s"
-            )
-
+        print(f"\nRepetition {rep_number + 1}")
+        print(f"Peak start: {t_right_sec[start]:.3f} s")
+        print(f"Peak end: {t_right_sec[stop]:.3f} s")
+        print(f"Acceleration samples: {len(acceleration)}")
+        print(f"Average velocity: {average_velocity:.3f} m/s")
+        print(f"Peak velocity: {peak_velocity:.3f} m/s")
 
 
 """
@@ -698,8 +552,8 @@ for i in range(1, len(valid_peaks_left)):
 #Reverser listen 
 #Når verdiene endrer retning stopp og ta ut verdien
 
-            
-"""
+      """      
+
 #============================================================
 # Plot acceleration and detected peaks for RIGHT sensor
 # ============================================================
