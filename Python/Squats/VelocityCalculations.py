@@ -6,8 +6,6 @@ from scipy.integrate import cumulative_trapezoid
 import ValidatePeaks as ValidatePeaks
 
 def calculate_velocity(magnitude_filtered, t_sec, valid_peaks, window_size=7):
-    
-
     all_repetition_acceleration = []
     all_repetition_time = []
     all_repetition_velocity = []
@@ -32,8 +30,10 @@ def calculate_velocity(magnitude_filtered, t_sec, valid_peaks, window_size=7):
             "peak_velocities": peak_velocities,
         }
 
-    for rep_number in range(len(valid_peaks)):
+    mean_acceleration = np.mean(magnitude_filtered)
 
+    for rep_number in range(len(valid_peaks)):
+        """
         # ----------------------------------------------------
         # Start and stop of this repetition
         # ----------------------------------------------------
@@ -48,44 +48,43 @@ def calculate_velocity(magnitude_filtered, t_sec, valid_peaks, window_size=7):
             # Start at previous detected peak, stop at current peak
             start = valid_peaks[rep_number - 1]
             stop = valid_peaks[rep_number]
-
+        """
         # ----------------------------------------------------
         # Extract acceleration and time
         # ----------------------------------------------------
 
-        repetition = magnitude_filtered[start:stop]
-        repetition_time = t_sec[start:stop]
+        #repetition = magnitude_filtered[start:stop]
+        #repetition_time = t_sec[start:stop]
 
         # ----------------------------------------------------
-        # Reverse the data
+        # Find increasing acceleration section (stigningsfase)
         # ----------------------------------------------------
 
-        repetition = np.flip(repetition)
-        repetition_time = np.flip(repetition_time)
-
-        # ----------------------------------------------------
-        # Find acceleration section
-        # ----------------------------------------------------
+        start = valid_peaks[rep_number]
+        stop = start
 
         acceleration = []
-        time_stamps = []
 
-        for j in range(window_size, len(repetition) - window_size):
+        while magnitude_filtered[start] >= mean_acceleration:
+            acceleration.append(magnitude_filtered[start])
+            start = start - 1
 
-            previous_average = np.mean(repetition[j - window_size:j])
-            next_average = np.mean(repetition[j:j + window_size])
+        acceleration = acceleration[::-1]
+        
+        while magnitude_filtered[stop] >= mean_acceleration: 
+            acceleration.append(magnitude_filtered[stop])
+            stop = stop + 1
 
-            if next_average < previous_average:
-                acceleration.append(repetition[j])
-                time_stamps.append(repetition_time[j])
-            else:
-                break
+        time_stamps = t_sec[start:stop]
+        acceleration = acceleration - mean_acceleration
 
         acceleration = np.array(acceleration)
         time_stamps = np.array(time_stamps)
 
+
+
         if len(acceleration) < 2:
-            print(f"\nRepetition {rep_number}: Not enough acceleration data.")
+            print(f"\nRepetition {rep_number + 1}: Not enough acceleration data.")
             continue
 
         # ----------------------------------------------------
@@ -106,10 +105,12 @@ def calculate_velocity(magnitude_filtered, t_sec, valid_peaks, window_size=7):
         # Print results
         # ----------------------------------------------------
 
-        print(f"\nRepetition {rep_number}")
+        print(f"\nRepetition {rep_number + 1}")
         print(f"Peak start: {t_sec[start]:.3f} s")
         print(f"Peak end: {t_sec[stop]:.3f} s")
         print(f"Acceleration samples: {len(acceleration)}")
+        print(f"Peak velocity: {peak_velocity:.4f}")
+        print(f"Mean velocity: {average_velocity:.4f}")
 
 
     return {
