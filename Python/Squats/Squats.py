@@ -15,7 +15,7 @@ import VelocityCalculations
 
 file_path = os.path.join(
     os.path.dirname(__file__),
-    "Test1_Rotating.csv"
+    "11squats011026.csv"
 )
 
 data = pd.read_csv(file_path)
@@ -89,7 +89,7 @@ gz_right = right_data["gz"].to_numpy()
 # Sample rate
 # ============================================================
 
-sample_rate = 100.0  # Hz
+sample_rate = 104.0  # Hz
 
 dt_left = 1.0 / sample_rate
 dt_right = 1.0 / sample_rate
@@ -191,14 +191,14 @@ print("Peaks after filtering:", len(valid_peaks_right))
 
 WINDOW_SIZE = 15
 
-results_right = VelocityCalculations.calculate_velocity(
+results_right = VelocityCalculations.calculate_velocity2(
     magnitude_right_filtered,
     t_right_sec,
     valid_peaks_right,
     window_size=WINDOW_SIZE
 )
 
-results_left = VelocityCalculations.calculate_velocity(
+results_left = VelocityCalculations.calculate_velocity2(
     magnitude_left_filtered, 
     t_left_sec, 
     valid_peaks_left,
@@ -261,3 +261,4 @@ ax_left.grid(True)
 plt.tight_layout()
 plt.show()
 #"""
+

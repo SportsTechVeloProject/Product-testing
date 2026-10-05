@@ -30,6 +30,11 @@ def calculate_velocity(magnitude_filtered, t_sec, valid_peaks, window_size=7):
             "peak_velocities": peak_velocities,
         }
 
+
+    # Filter acceleration with moving average:
+    magnitude_filtered = np.convolve(magnitude_filtered, np.ones(window_size) / window_size, 'same') 
+    
+    
     mean_acceleration = np.mean(magnitude_filtered)
 
     for rep_number in range(len(valid_peaks)):
@@ -101,6 +106,11 @@ def calculate_velocity(magnitude_filtered, t_sec, valid_peaks, window_size=7):
         average_velocities.append(average_velocity)
         peak_velocities.append(peak_velocity)
 
+        plt.plot(time_stamps, acceleration, label="acceleration")
+        plt.plot(time_stamps, velocity, label="velocity")
+        plt.legend()
+        plt.show()
+        
         # ----------------------------------------------------
         # Print results
         # ----------------------------------------------------
@@ -120,3 +130,92 @@ def calculate_velocity(magnitude_filtered, t_sec, valid_peaks, window_size=7):
         "average_velocities": average_velocities,
         "peak_velocities": peak_velocities,
     }
+
+def calculate_velocity2(magnitude_filtered, t_sec, valid_peaks, window_size=7):
+    all_repetition_acceleration = []
+    all_repetition_time = []
+    all_repetition_velocity = []
+
+    average_velocities = []
+    peak_velocities = []
+
+    # Filter acceleration with moving average:
+    magnitude_filtered = np.convolve(magnitude_filtered, np.ones(window_size) / window_size, 'same') 
+    mean_acceleration = np.mean(magnitude_filtered[104:208])
+    #mean_acceleration = -9.8
+    print("Mean acceleration: ", mean_acceleration)
+
+    for rep_number in range(len(valid_peaks)):
+        start = valid_peaks[rep_number]
+        stop = start
+
+        acceleration = []
+
+        while magnitude_filtered[start] >= mean_acceleration:
+            acceleration.append(magnitude_filtered[start] - mean_acceleration)
+            start = start - 1
+
+        acceleration = acceleration[::-1]
+        
+        while magnitude_filtered[stop] >= mean_acceleration: 
+            acceleration.append(magnitude_filtered[stop] - mean_acceleration)
+            stop = stop + 1
+
+        time_stamps = t_sec[start:stop]
+        velocity = cumulative_trapezoid(acceleration, time_stamps, initial=0)
+        while(velocity[-1] >= 0.01):
+            stop += 1
+            time_stamps = t_sec[start:stop]
+            acceleration.append(magnitude_filtered[stop] - mean_acceleration)
+            velocity = cumulative_trapezoid(acceleration, time_stamps, initial=0)
+
+        acceleration = np.array(acceleration)
+        time_stamps = np.array(time_stamps)
+
+
+
+        if len(acceleration) < 2:
+            print(f"\nRepetition {rep_number + 1}: Not enough acceleration data.")
+            continue
+
+        # ----------------------------------------------------
+        # Calculate velocity
+        # ----------------------------------------------------
+
+        velocity = cumulative_trapezoid(acceleration, time_stamps, initial=0)
+        average_velocity = np.mean(np.abs(velocity)) / (time_stamps[-1] - time_stamps[0])
+        
+        peak_velocity = np.max(np.abs(velocity))
+
+        all_repetition_acceleration.append(acceleration)
+        all_repetition_time.append(time_stamps)
+        all_repetition_velocity.append(velocity)
+        average_velocities.append(average_velocity)
+        peak_velocities.append(peak_velocity)
+
+
+        # Plot results:
+        plt.plot(time_stamps, acceleration, label="acceleration")
+        plt.plot(time_stamps, velocity, label="velocity")
+        plt.legend()
+        plt.show()
+        # ----------------------------------------------------
+        # Print results
+        # ----------------------------------------------------
+
+        print(f"\nRepetition {rep_number + 1}")
+        print(f"Peak start: {t_sec[start]:.3f} s")
+        print(f"Peak end: {t_sec[stop]:.3f} s")
+        print(f"Acceleration samples: {len(acceleration)}")
+        print(f"Peak velocity: {peak_velocity:.4f}")
+        print(f"Mean velocity: {average_velocity:.4f}")
+
+
+    return {
+        "all_acceleration": all_repetition_acceleration,
+        "all_time": all_repetition_time,
+        "all_velocity": all_repetition_velocity,
+        "average_velocities": average_velocities,
+        "peak_velocities": peak_velocities,
+    }
+        
