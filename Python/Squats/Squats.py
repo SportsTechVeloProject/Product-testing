@@ -126,8 +126,8 @@ earth_acceleration_right, magnitude_right_filtered = MagdwickFilter.madgwick_fil
 magnitude_left_raw = -magnitude_left_raw
 magnitude_right_raw = -magnitude_right_raw
 
-magnitude_left_filtered = -magnitude_left_filtered
-magnitude_right_filtered = -magnitude_right_filtered
+#magnitude_left_filtered = -magnitude_left_filtered
+#magnitude_right_filtered = -magnitude_right_filtered
 
 # Individual axes - raw
 x_left = -x_left
@@ -142,15 +142,19 @@ z_right = -z_right
 earth_acceleration_left = -earth_acceleration_left
 earth_acceleration_right = -earth_acceleration_right
 
+# Unfiltered values:
+#magnitude_right_filtered = magnitude_right_raw
+#magnitude_left_filtered = magnitude_left_raw
 
 ##Calcualate number of peaks
 peaks_right, properties_right, treshold_right = PeakDetection.peak_detection(
-    magnitude_right_filtered,
+    #magnitude_right_filtered,
+    earth_acceleration_right[:,2],
     window_size=50,  k=2,  
     distance=100    
 )
 peaks_left, properties_left, treshold_left = PeakDetection.peak_detection(
-    magnitude_left_filtered, 
+    earth_acceleration_left[:,2], 
     window_size=50, k=2, 
     distance = 100)
 
@@ -191,19 +195,39 @@ print("Peaks after filtering:", len(valid_peaks_right))
 
 WINDOW_SIZE = 15
 
-results_right = VelocityCalculations.calculate_velocity2(
+results_right = VelocityCalculations.calculate_velocity3(
     magnitude_right_filtered,
     t_right_sec,
-    valid_peaks_right,
+    reps=11,
     window_size=WINDOW_SIZE
 )
 
-results_left = VelocityCalculations.calculate_velocity2(
+results_left = VelocityCalculations.calculate_velocity3(
     magnitude_left_filtered, 
     t_left_sec, 
-    valid_peaks_left,
+    reps=11,
     window_size=WINDOW_SIZE
 )
+
+
+
+average_right = results_right['average_velocities']
+peak_right = results_right['peak_velocities']
+average_left = results_left['average_velocities']
+peak_left = results_left['peak_velocities']
+
+#Save to file:
+df = pd.DataFrame({
+    "left": {"average": average_left, "peak": peak_left},
+    "right": {"average": average_right, "peak": peak_right}
+})
+df.to_json("output.json")
+
+# Print results:
+for i in range(len(average_right)):
+    print("Left Rep: ", i+1, " average: ", float(average_left[i]), " peak: ", float(peak_left[i]))
+    print("Right Rep: ", i+1, " average: ", float(average_right[i]), " peak: ", float(peak_right[i]))
+    print("----")
 
 # ============================================================
 # Plot acceleration and detected peaks for LEFT and RIGHT sensors
@@ -261,4 +285,3 @@ ax_left.grid(True)
 plt.tight_layout()
 plt.show()
 #"""
-
