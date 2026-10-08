@@ -225,8 +225,8 @@ df.to_json("output.json")
 
 # Print results:
 for i in range(len(average_right)):
-    print("Left Rep: ", i+1, " average: ", float(average_left[i]), " peak: ", float(peak_left[i]))
     print("Right Rep: ", i+1, " average: ", float(average_right[i]), " peak: ", float(peak_right[i]))
+    print("Left Rep: ", i+1, " average: ", float(average_left[i]), " peak: ", float(peak_left[i]))
     print("----")
 
 # ============================================================
