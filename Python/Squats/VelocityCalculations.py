@@ -260,7 +260,22 @@ def calculate_velocity2(magnitude_filtered, t_sec, valid_peaks, window_size=7):
         "peak_velocities": peak_velocities,
     }
 
-def calculate_velocity3(magnitude_filtered, t_sec, reps, window_size=7):
+def find_drift(velocity, t_sec, magnitude_raw):
+    Treshold = 1.5*np.mean(magnitude_raw)
+    i = 0
+    indexes, _ = find_peaks(magnitude_raw, height=Treshold)
+
+    stop = indexes[0]
+
+    stop = stop - 208
+
+    k, m = np.polyfit(t_sec[:stop], velocity[:stop], 1)
+
+    return k, m
+
+   
+
+def calculate_velocity3(magnitude_filtered, t_sec, reps, magnitude_raw, window_size=7):
     all_repetition_acceleration = []
     all_repetition_time = []
     all_repetition_velocity = []
@@ -280,13 +295,27 @@ def calculate_velocity3(magnitude_filtered, t_sec, reps, window_size=7):
     # Calculate the velocity by integration
     velocity = cumulative_trapezoid(magnitude_filtered - mean_acceleration, t_sec, initial=0)
 
+    """
+    rep_index = find_peaks(velocity, height=0.5)
+    print("Rep index: ", rep_index)
+    
+
+
+    if(np.mean(velocity[-10:]) > np.max(velocity[0:-100])):
+        stop_index = np.mean(velocity[-324:-312])
+    else: 
+        stop_index = np.mean(velocity[:-10])
+    """
+
     # Assume the drift is linear.
-    k = (np.mean(velocity[-10:]) - np.mean(velocity[:10]))/(t_sec[-1] - t_sec[0])
+    #k = (stop_index- np.mean(velocity[:10]))/(t_sec[-1] - t_sec[0])
     #m = np.mean(velocity[104:208]) - velocity[0]
-    y = k*t_sec #+ m
+    k, m = find_drift(velocity, t_sec, magnitude_raw)
+    y = k*t_sec + m
     diff = velocity - y
-    crossings = []
+
     i = 0
+    crossings = []
     while i < (len(diff)-1):
         if diff[i] < -0.25:
             break
@@ -304,6 +333,7 @@ def calculate_velocity3(magnitude_filtered, t_sec, reps, window_size=7):
     plt.plot(t_sec, y)
     plt.plot(t_sec, velocity)
     plt.plot(t_sec[crossings], diff[crossings], 'x', markersize=10)
+    #plt.plot(t_sec[rep_index], diff[rep_index], 'o', markersize=10)
     plt.plot(t_sec, diff)
     plt.show()
 
@@ -317,7 +347,7 @@ def calculate_velocity3(magnitude_filtered, t_sec, reps, window_size=7):
         all_repetition_time.append(t_sec[crossA:crossB])
 
         j += 2
-
+       
     return {
         "all_acceleration": all_repetition_acceleration,
         "all_time": all_repetition_time,
