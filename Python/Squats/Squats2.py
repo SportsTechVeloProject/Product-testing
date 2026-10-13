@@ -163,3 +163,13 @@ peak_v = results['peak_velocities']
 for i in range(len(average_v)):
     print("Average Rep: ", i+1, " average: ", float(average_v[i]), " peak: ", float(peak_v[i]))
     print("----")
+
+
+data = {
+    "average_velocities": pd.Series(average_v),
+    "peak_velocities": pd.Series(peak_v),
+    "crossings": pd.Series(crossings),
+    "velocity": pd.Series(velocity)
+}
+
+pd.DataFrame(data).to_json("results.json", orient="columns", indent=4)
