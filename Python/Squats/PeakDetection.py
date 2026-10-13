@@ -6,7 +6,14 @@ from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 from scipy.integrate import cumulative_trapezoid
 
-
+def peak_detect(velocity, start, stop, reps):
+    speed = 3.0
+    peaks, _ = find_peaks(velocity[start:stop], height=speed, distance=52)
+    while(len(peaks) < reps):
+        speed -= 0.1
+        peaks, _ = find_peaks(velocity[start:stop], height=speed, distance=52)
+    return peaks
+'''
 def peak_detection(signal,
     window_size=50,
     k=0.5,
@@ -61,3 +68,4 @@ def compute_threshold(signal, window_size=50, k=0.5):
     threshold = np.mean(moving_avg) + k * deviation_std
 
     return threshold
+'''
