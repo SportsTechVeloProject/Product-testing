@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import cumulative_trapezoid
 import ValidatePeaks as ValidatePeaks
 
+# Different zone thresholds
 threshold_dict = {
     'slow' : [3, 208],
     'medium': [2, 208],
@@ -51,35 +52,18 @@ def calculate_velocity3(magnitude_filtered, t_sec, type, reps, magnitude_raw, wi
     all_repetition_velocity = []
 
     average_velocities = []
-    peak_velocities = []
 
     # Filter acceleration with moving average:
     magnitude_filtered = np.convolve(magnitude_filtered, np.ones(window_size) / window_size, 'same') 
 
     #Average of the acceleration on 1-2s
     mean_acceleration = np.mean(magnitude_filtered[104:208])
-    #mean_acceleration = -9.8
-    print("Mean acceleration: ", mean_acceleration)
 
 
     # Calculate the velocity by integration
     velocity = cumulative_trapezoid(magnitude_filtered - mean_acceleration, t_sec, initial=0)
 
-    """
-    rep_index = find_peaks(velocity, height=0.5)
-    print("Rep index: ", rep_index)
-    
-
-
-    if(np.mean(velocity[-10:]) > np.max(velocity[0:-100])):
-        stop_index = np.mean(velocity[-324:-312])
-    else: 
-        stop_index = np.mean(velocity[:-10])
-    """
-
     # Assume the drift is linear.
-    #k = (stop_index- np.mean(velocity[:10]))/(t_sec[-1] - t_sec[0])
-    #m = np.mean(velocity[104:208]) - velocity[0]
     k, m, start_index, stop_index = find_drift(velocity, t_sec, magnitude_raw, type)
     y = k*t_sec + m
     diff = velocity - y
@@ -97,26 +81,6 @@ def calculate_velocity3(magnitude_filtered, t_sec, type, reps, magnitude_raw, wi
         y = k*t_sec #+ m
         diff = velocity - y
         peaks, peak_info = peak_detect(diff, 0, stop_index, reps, type)
-        '''
-        print("HERE")
-        ind = peaks[0] - 416
-        print("k: ", k)
-        m = np.mean(velocity[ind-208:ind])
-        print("m: ", m)
-        dm = np.sqrt((k*t_sec[ind]) ** 2 + t_sec[ind] **2)
-        m = m - dm
-        print("m: ", m)
-        y = k*t_sec + m
-        diff = velocity - y
-        peaks, peak_info = peak_detect(diff, start_index, stop_index, reps, type)
-        '''
-    plt.plot(t_sec, y)
-    plt.plot(t_sec, velocity)
-    #plt.plot(t_sec[crossings], diff[crossings], 'x', markersize=10)
-    plt.plot(t_sec[peaks], diff[peaks], 'x', markersize=10)
-    #plt.plot(t_sec[rep_index], diff[rep_index], 'o', markersize=10)
-    plt.plot(t_sec, diff)
-    plt.show()
     for peak in peaks:
         start = peak
         end = peak
@@ -126,11 +90,10 @@ def calculate_velocity3(magnitude_filtered, t_sec, type, reps, magnitude_raw, wi
             end += 1
         mean_v = np.mean(diff[start:end])
         average_velocities.append(mean_v)
+    
     plt.plot(t_sec, y)
     plt.plot(t_sec, velocity)
-    #plt.plot(t_sec[crossings], diff[crossings], 'x', markersize=10)
     plt.plot(t_sec[peaks], diff[peaks], 'x', markersize=10)
-    #plt.plot(t_sec[rep_index], diff[rep_index], 'o', markersize=10)
     plt.plot(t_sec, diff)
     plt.show()
        
