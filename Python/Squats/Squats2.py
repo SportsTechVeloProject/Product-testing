@@ -9,13 +9,19 @@ import VelocityCalculations
 import sys
 
 def is_left_better(magnitude_filtered_right, magnitude_filtered_left, t_sec_right, t_sec_left):
-    mean_acceleration_left = np.mean(magnitude_filtered_left[104:208])
-    mean_acceleration_right = np.mean(magnitude_filtered_right[104:208])
+    mean_acceleration_left = np.mean(magnitude_filtered_left[0:52])
+    mean_acceleration_right = np.mean(magnitude_filtered_right[0:52])
 
 
     velocity_left = cumulative_trapezoid(magnitude_filtered_left - mean_acceleration_left, t_sec_left, initial=0)
     velocity_right = cumulative_trapezoid(magnitude_filtered_right - mean_acceleration_right, t_sec_right, initial=0)
-    if (np.max(np.abs(velocity_left[312:-520])) < np.max(np.abs(velocity_right[312:-520]))):
+    plt.plot(t_sec_left, velocity_left, label="left")
+    plt.plot(t_sec_right, velocity_right, label="right")
+    plt.legend()
+    plt.show()
+    velocity_left_drift = (velocity_left[-1] - velocity_left[0])
+    velocity_right_drift = (velocity_right[-1] - velocity_right[0])
+    if (velocity_left_drift < velocity_right_drift):
         return True
     else:
         return False
@@ -27,7 +33,7 @@ def is_left_better(magnitude_filtered_right, magnitude_filtered_left, t_sec_righ
 # The data needed is IMU values (gyro + acc), time_stamps, number of reps, optimal speed zone
 file_path = os.path.join(
     os.path.dirname(__file__),
-    "siljeFast.csv"
+    "greipurMediumCut.csv"
 )
 TYPE = 'fast' # slow, medium, fast
 REPS = 6
@@ -133,11 +139,12 @@ earth_acceleration_right, magnitude_right_filtered = MagdwickFilter.madgwick_fil
 # ============================================================
 # Calculate velocity using the filtered acceleration
 # ============================================================
-
 WINDOW_SIZE = 15
-
+#is_left_better(magnitude_right_filtered, magnitude_left_filtered, t_right_sec, t_left_sec)
+results = VelocityCalculations.calculate_velocity_external_start_stop(magnitude_right_filtered, magnitude_left_filtered, t_right_sec, t_left_sec, TYPE, REPS, WINDOW_SIZE)
+'''
 if is_left_better(magnitude_right_filtered, magnitude_left_filtered, t_right_sec, t_left_sec):
-    results = VelocityCalculations.calculate_velocity3(
+    results = VelocityCalculations.calculate_velocity4(
     magnitude_left_filtered, 
     t_left_sec,
     TYPE,
@@ -146,7 +153,7 @@ if is_left_better(magnitude_right_filtered, magnitude_left_filtered, t_right_sec
     window_size=WINDOW_SIZE
     )
 else:
-    results = VelocityCalculations.calculate_velocity3(
+    results = VelocityCalculations.calculate_velocity4(
     magnitude_right_filtered,
     t_right_sec,
     TYPE,
@@ -154,7 +161,7 @@ else:
     magnitude_raw=magnitude_right_raw,
     window_size=WINDOW_SIZE
 )
-
+'''
 average_v = results['average_velocities']
 peak_v = results['peak_velocities']
 
